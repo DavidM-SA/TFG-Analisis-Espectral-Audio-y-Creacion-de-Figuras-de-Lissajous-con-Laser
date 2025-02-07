@@ -1,5 +1,5 @@
 #include <Arduino.h>
-int stepPin = 3; 
+int stepPin = 5; 
 int dirPin = 2;
 int pot = A0;
 int maxtime =3000;
