@@ -10,8 +10,8 @@
 const int freqMin = 10;    // Frecuencia mínima en Hz
 const int freqMax = 5000;  // Frecuencia máxima en Hz
 
-volatile uint16_t interval1 = 500;  // Período en microsegundos
-volatile uint16_t interval2 = 500;  
+volatile uint16_t time1 = 500;  // Período en microsegundos
+volatile uint16_t time2 = 500;  
 volatile bool state1 = false; // Estado de la señal
 volatile bool state2 = false; 
 
@@ -27,13 +27,13 @@ void setup() {
     TCCR1A = 0;  // Modo normal
     TCCR1B = (1 << WGM12) | (1 << CS11); // CTC, Prescaler de 8
     OCR1A = 500; // Valor inicial de comparación
-    TIMSK1 |= (1 << OCIE1A); // Habilitar interrupción por comparación A
+    TIMSK1 |= (1 << OCIE1A); // TIMSK1 (Timer Interrupt Mask Register 1) y OCIE1A (Output Compare Interrupt Enable 1A)
 
     // Configurar Timer3 (16 bits)
     TCCR3A = 0;  
     TCCR3B = (1 << WGM32) | (1 << CS31); // CTC, Prescaler de 8
     OCR3A = 500;  
-    TIMSK3 |= (1 << OCIE3A); // Habilitar interrupción por comparación A
+    TIMSK3 |= (1 << OCIE3A); // Habilitar interrupción por comparación OCIE3A
 
     sei(); // Habilitar interrupciones
 }
@@ -42,14 +42,14 @@ void setup() {
 ISR(TIMER1_COMPA_vect) {
     state1 = !state1;
     digitalWrite(MOTOR1, state1);
-    OCR1A = interval1; // Actualizar intervalo
+    OCR1A = time1; // Actualizar intervalo
 }
 
 // Interrupción Timer3 (Motor 2)
 ISR(TIMER3_COMPA_vect) {
     state2 = !state2;
     digitalWrite(MOTOR2, state2);
-    OCR3A = interval2; 
+    OCR3A = time2; 
 }
 
 void loop() {
@@ -62,8 +62,8 @@ void loop() {
     int freq2 = map(potValue2, 0, 1023, freqMin, freqMax);
 
     // Calcular intervalo en ticks (1 tick = 0.5us con prescaler de 8)
-    interval1 = (1000000 / freq1) / 2 / 0.5;
-    interval2 = (1000000 / freq2) / 2 / 0.5;
+    time1 = (1000000 / 2*freq1) / 0.5;
+    time2 = (1000000 / 2*freq2) / 0.5;
 
     Serial.print("Freq1: "); Serial.print(freq1); Serial.print(" Hz, ");
     Serial.print("Freq2: "); Serial.print(freq2); Serial.println(" Hz");
