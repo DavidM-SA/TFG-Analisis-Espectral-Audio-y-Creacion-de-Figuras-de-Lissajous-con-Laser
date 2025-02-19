@@ -8,6 +8,7 @@ void leerFrecuencias(volatile int* freq1, volatile int* freq2);
 // Definición de pines para los motores
 #define MOTOR1 9 // Pin de salida para motor 1 (Timer1)
 #define MOTOR2 5 // Pin de salida para motor 2 (Timer3)
+#define MicroStep 3
 
 // Rango de frecuencias permitidas en Hz
 const int freqMin = 10;    // Frecuencia mínima en Hz
@@ -27,33 +28,32 @@ void setup() {
 
     pinMode(MOTOR1, OUTPUT);
     pinMode(MOTOR2, OUTPUT);
+    pinMode(MicroStep, OUTPUT);
+
+    digitalWrite(MicroStep, HIGH); //Ponemos el driver en modo micropaso de 1/16
 
     cli(); // Desactivar interrupciones mientras configuramos
 
     // Configurar Timer1 (16 bits)
-    TCCR1A = 0;  // Modo normal sin PWM
-    TCCR1B = (1 << WGM12) | (1 << CS11); 
-    // WGM12 -> Activa el modo CTC (Clear Timer on Compare Match)
-    // CS11  -> Prescaler de 8 (divide el reloj de 16MHz entre 8 → 2MHz)
-    OCR1A = 500;  
-    TIMSK1 |= (1 << OCIE1A); //Habilita la interrupción cuando OCR1A coincide con el contador
+    TCCR1A = 0;  // Modo normal
+    TCCR1B = (1 << WGM12) | (1 << CS11); // CTC, Prescaler de 8
+    OCR1A = 500; // Valor inicial de comparación
+    TIMSK1 |= (1 << OCIE1A); // TIMSK1 (Timer Interrupt Mask Register 1) y OCIE1A (Output Compare Interrupt Enable 1A)
 
     // Configurar Timer3 (16 bits)
-    TCCR3A = 0;  // Modo normal sin PWM
-    TCCR3B = (1 << WGM32) | (1 << CS31); 
-    // WGM32 -> Activa el modo CTC en Timer3
-    // CS31  -> Prescaler de 8
-    OCR3A = 500;  // Valor inicial del comparador A para Timer3
-    TIMSK3 |= (1 << OCIE3A); // OCIE3A -> Habilita la interrupción del Timer3 cuando OCR3A coincide con el contador
+    TCCR3A = 0;  
+    TCCR3B = (1 << WGM32) | (1 << CS31); // CTC, Prescaler de 8
+    OCR3A = 500;  
+    TIMSK3 |= (1 << OCIE3A); // Habilitar interrupción por comparación OCIE3A
 
     sei(); // Habilitar interrupciones
 }
 
 // Interrupción Timer1 (Motor 1)
 ISR(TIMER1_COMPA_vect) {
-    state1 = !state1;  // Alternar el estado de la señal (encender/apagar)
+    state1 = !state1;
     digitalWrite(MOTOR1, state1);
-    OCR1A = frecuency1;  // Actualizar el valor del comparador
+    OCR1A = frecuency1; // Actualizar intervalo
 }
 
 // Interrupción Timer3 (Motor 2)
@@ -63,6 +63,7 @@ ISR(TIMER3_COMPA_vect) {
     OCR3A = frecuency2; 
 }
 
+
 void loop() {
     leerFrecuencias(&frecuency1, &frecuency2);
 }
@@ -70,8 +71,6 @@ void loop() {
 void leerFrecuencias(volatile int* freq1, volatile int* freq2) {
   if (Serial.available() > 0) {  
         String input = Serial.readStringUntil('\n');  // Lee hasta encontrar '\n'
-        Serial.flush();  // Limpia el buffer de recepción
-
         int separatorIndex = input.indexOf(',');      // Encuentra la coma (delimitador)
 
         if (separatorIndex != -1) {
