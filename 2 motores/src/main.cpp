@@ -6,6 +6,7 @@
 #define POT2 A1  // Potenciómetro 2
 #define MOTOR1 9 // Pin de salida para motor 1 (Timer1)
 #define MOTOR2 5 // Pin de salida para motor 2 (Timer3)
+#define MicroStep 3
 
 const int freqMin = 10;    // Frecuencia mínima en Hz
 const int freqMax = 5000;  // Frecuencia máxima en Hz
@@ -20,6 +21,9 @@ void setup() {
 
     pinMode(MOTOR1, OUTPUT);
     pinMode(MOTOR2, OUTPUT);
+    pinMode(MicroStep, OUTPUT);
+
+    digitalWrite(MicroStep, HIGH); //Ponemos el driver en modo micropaso de 1/16
 
     cli(); // Desactivar interrupciones mientras configuramos
 
@@ -62,8 +66,8 @@ void loop() {
     int freq2 = map(potValue2, 0, 1023, freqMin, freqMax);
 
     // Calcular intervalo en ticks (1 tick = 0.5us con prescaler de 8)
-    time1 = (1000000 / 2*freq1) / 0.5;
-    time2 = (1000000 / 2*freq2) / 0.5;
+    time1 = (1000000 / (2*freq1)) -1;
+    time2 = (1000000 / (2*freq2)) -1;
 
     Serial.print("Freq1: "); Serial.print(freq1); Serial.print(" Hz, ");
     Serial.print("Freq2: "); Serial.print(freq2); Serial.println(" Hz");
