@@ -3,7 +3,7 @@
 #include <avr/interrupt.h>
 
 // Función para leer frecuencias desde LabVIEW
-void leerFrecuencias(volatile int* freq1, volatile int* freq2);
+void leerFrecuencias(volatile int* timeFreq1, volatile int* timeFreq2);
 
 // Definición de pines para los motores
 #define MOTOR1 9 // Pin de salida para motor 1 (Timer1)
@@ -11,12 +11,12 @@ void leerFrecuencias(volatile int* freq1, volatile int* freq2);
 #define MicroStep 3
 
 // Rango de frecuencias permitidas en Hz
-const int freqMin = 10;    // Frecuencia mínima en Hz
-const int freqMax = 5000;  // Frecuencia máxima en Hz
+const int freqMin = 150;    // Frecuencia mínima en Hz
+const int freqMax = 2000;  // Frecuencia máxima en Hz
 
 // Variables globales de frecuencia (se almacenan en microsegundos)
-volatile int frecuency1 = 500;  
-volatile int frecuency2 = 500;  
+volatile int time1 = 500;  
+volatile int time2 = 500;  
 volatile bool state1 = false; // Estado de la señal para motor 1
 volatile bool state2 = false; // Estado de la señal para motor 2
 
@@ -24,7 +24,7 @@ String str1, str2; // Variables para almacenar los datos recibidos por Serial
 
 
 void setup() {
-    Serial.begin(115200);
+    Serial.begin(230400);
 
     pinMode(MOTOR1, OUTPUT);
     pinMode(MOTOR2, OUTPUT);
@@ -53,22 +53,22 @@ void setup() {
 ISR(TIMER1_COMPA_vect) {
     state1 = !state1;
     digitalWrite(MOTOR1, state1);
-    OCR1A = frecuency1; // Actualizar intervalo
+    OCR1A = time1; // Actualizar intervalo
 }
 
 // Interrupción Timer3 (Motor 2)
 ISR(TIMER3_COMPA_vect) {
     state2 = !state2;
     digitalWrite(MOTOR2, state2);
-    OCR3A = frecuency2; 
+    OCR3A = time2; 
 }
 
 
 void loop() {
-    leerFrecuencias(&frecuency1, &frecuency2);
+    leerFrecuencias(&time1, &time2);
 }
 
-void leerFrecuencias(volatile int* freq1, volatile int* freq2) {
+void leerFrecuencias(volatile int* timeFreq1, volatile int* timeFreq2) {
   if (Serial.available() > 0) {  
         String input = Serial.readStringUntil('\n');  // Lee hasta encontrar '\n'
         int separatorIndex = input.indexOf(',');      // Encuentra la coma (delimitador)
@@ -77,19 +77,25 @@ void leerFrecuencias(volatile int* freq1, volatile int* freq2) {
             str1 = input.substring(0, separatorIndex);   // Extrae la primera frecuencia
             str2 = input.substring(separatorIndex + 1);  // Extrae la segunda freciemcia
         }
-      int f1 =str1.toInt();
+      int f1 = str1.toInt();
       int f2 = str2.toInt();
 
       // Validar rangos y actualizar punteros
       if (f1 >= freqMin && f1 <= freqMax) {
-          *freq1 = (1000000 / (2*f1)) - 1;
+        noInterrupts();
+          *timeFreq1 = (2000000 / (2*f1)) - 1;
+        interrupts();
       }
       if (f2 >= freqMin && f2 <= freqMax) {
-          *freq2 = (1000000 / (2*f2)) - 1;
+        noInterrupts();
+          *timeFreq2 = (2000000 / (2*f2)) - 1;
+          interrupts();
       }
 
       // Enviar confirmación a LabVIEW
-      Serial.print("Set Freq1: "); Serial.print(f1); Serial.print(" Hz, ");
-      Serial.print("Set Freq2: "); Serial.print(f2); Serial.println(" Hz");
+      /*Serial.print("Set Freq1: "); Serial.print(f1); Serial.print(" Hz, ");
+      Serial.print("Set Freq2: "); Serial.print(f1); Serial.println(" Hz");
+      Serial.print("time1: "); Serial.print(time1); Serial.print(" microseg, ");
+      Serial.print("time2: "); Serial.print(time2); Serial.println(" microseg");*/
   }
 }
