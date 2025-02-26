@@ -11,8 +11,8 @@ void leerFrecuencias(volatile int* timeFreq1, volatile int* timeFreq2);
 #define MicroStep 3
 
 // Rango de frecuencias permitidas en Hz
-const int freqMin = 150;    // Frecuencia mínima en Hz
-const int freqMax = 2000;  // Frecuencia máxima en Hz
+const int freqMin = 350;    // Frecuencia mínima en Hz
+const int freqMax = 2800;  // Frecuencia máxima en Hz
 
 // Variables globales de frecuencia (se almacenan en microsegundos)
 volatile int time1 = 500;  
@@ -24,7 +24,7 @@ String str1, str2; // Variables para almacenar los datos recibidos por Serial
 
 
 void setup() {
-    Serial.begin(128000);
+    Serial.begin(115200);
 
     pinMode(MOTOR1, OUTPUT);
     pinMode(MOTOR2, OUTPUT);
